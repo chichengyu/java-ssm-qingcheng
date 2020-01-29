@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+             http://www.springframework.org/schema/beans/spring-beans.xsd
+			 http://www.springframework.org/schema/security
+			 http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 默认开放 -->
+    <http pattern="/view/login.html" security="none"/>
+    <http pattern="/css/**" security="none"/>
+    <http pattern="/js/**" security="none"/>
+    <http pattern="/img/**" security="none"/>
+    <http pattern="/plugins/**" security="none"/>
+    <http pattern="/**/*.ico" security="none"/>
+
+    <!-- 页面拦截规则 -->
+    <http>
+        <!--所有资源必须有ROLE_ADMIN角色才可以访问-->
+        <intercept-url pattern="/**" access="hasRole('ROLE_ADMIN')"></intercept-url>
+
+        <!--当前的工程实现表单登陆
+            注意：配置了 authentication-success-handler-ref，则 default-target-url 就不会生效
+        -->
+        <form-login
+                login-page="/view/login.html"
+                default-target-url="/view/main.html"
+                authentication-failure-url="/view/login.html"
+                authentication-success-handler-ref="successHandler"
+                />
+
+        <!--退出登陆  /logout post (spring security提供)-->
+        <logout />
+
+        <!--关闭csrf验证   跨站请求伪造  token-->
+        <csrf disabled="true"/>
+
+        <!--同源策略
+            Spring Security下，X-Frame-Options默认为DENY. 如果不修改同源策略，框架页内将
+            无法显示内容。
+            DENY：浏览器拒绝当前页面加载任何Frame页面
+            SAMEORIGIN：frame页面的地址只能为同源域名下的页面
+            ALLOW-FROM：origin为允许frame加载的页面地址
+        -->
+        <headers>
+            <frame-options policy="SAMEORIGIN"/>
+        </headers>
+    </http>
+
+    <!--认证管理器-->
+    <authentication-manager>
+        <!-- 在组件 userDetailService -> cn.qingcheng.service.UserDetailServiceImpl 中进行过滤验证 -->
+        <authentication-provider user-service-ref="userDetailService">
+            <password-encoder ref="bcryptEncoder"/>
+        </authentication-provider>
+    </authentication-manager>
+
+    <!-- 配置 bean -->
+    <beans:bean id="userDetailService" class="cn.qingcheng.exception.cn.qingcheng.service.UserDetailServiceImpl"/>
+    <beans:bean id="bcryptEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+    <beans:bean id="successHandler" class="cn.qingcheng.exception.AuthenticationSuccessHandlerImpl"/>
+</beans:beans>
